@@ -154,6 +154,7 @@ def replace_modules(model, module_names, new_modules, copy_ckpt=False):
     if copy_ckpt:
       copy_module_weights(modules[i], new_modules[i])
 
+
 def create_module_by_node(module_cls, node):
   attrs = {name: node.op.get_config(name) for name in node.op.configs}
   module = module_cls(**attrs)

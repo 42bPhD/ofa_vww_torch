@@ -22,7 +22,7 @@ from typing import Any, List, Optional, Sequence, Union
 import re
 import torch
 
-# from pytorch_nndct.version import __version__, Ctorch_version
+from pytorch_nndct.version import __version__, Ctorch_version
 import nndct_shared.utils as nndct_utils
 from nndct_shared.base import GLOBAL_MAP, NNDCT_KEYS, NNDCT_OP
 from nndct_shared.compile import CompilerFactory, DeployChecker
@@ -558,8 +558,8 @@ def vaiq_system_info(device):
       NndctScreenLogger().warning2user(QWarning.CUDA_UNAVAILABLE, f"CUDA (HIP) is not available, change device to CPU")
 
   NndctScreenLogger().check2user(QError.TORCH_VERSION, f"Installed pytorch version is {torch.__version__}, \
-not consistent with pytorch version when compiling quantizer ()",
-      )
+not consistent with pytorch version when compiling quantizer ({Ctorch_version})",
+      torch.__version__ in __version__)
   import platform as pf
   import sys
   long_ver = sys.version
@@ -582,7 +582,7 @@ not consistent with pytorch version when compiling quantizer ()",
                   GCC --- {gcc_ver}\n\
                python --- {py_ver}\n\
               pytorch --- {torch.__version__}\n\
-  ')
+        vai_q_pytorch --- {__version__}')
   if device == torch.device('cuda'):
     NndctScreenLogger().info(f'GPU information:\n\
           device name --- {torch.cuda.get_device_name()}\n\

@@ -21,7 +21,7 @@
 import sys
 import torch
 # from ..load_kernels import nndct_kernels
-from ..load_kernels import *
+# from ..load_kernels import *
 import copy
 import numpy as np
 from nndct_shared.utils import NndctOption, NndctScreenLogger

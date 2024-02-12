@@ -21,7 +21,7 @@
 import sys
 import torch
 # from ..load_kernels import nndct_kernels
-from ..load_kernels import *
+# from ..load_kernels import *
 import copy
 import numpy as np
 from nndct_shared.utils import NndctOption, NndctScreenLogger
@@ -57,6 +57,7 @@ __all__ = ["NndctFixNeuron",
            "NndctLayernormInvSqrt"]     
 
 def support_onnx_export():
+  return True
   if compare_torch_version(CmpFlag.GREATER_EQUAL, "1.7.0"):
     return True
   else:

@@ -221,7 +221,7 @@ class NndctGraphHolder(NndctDebugger):
   def quant_group(self, node_or_name):
     node = self._find_node(node_or_name)
     if not node.in_quant_part:
-      return None
+      return [node_or_name], [node.op.type]
     QuantGroupTypes = []
     for node_name in self._QuantGroups[node.name]:
       QuantGroupTypes.append(self.__Nndctgraph.node(node_name).op.type)

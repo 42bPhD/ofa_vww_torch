@@ -264,7 +264,18 @@ def reshape(xgraph: XGraph, node: Node,
   sub_op_pack, pack_list = _pack(xgraph, node, "shape", shape, quant_config)
   input_ops: Dict[str, List["xir.Op"]] = {}
   input_ops["shape"] = [sub_op_pack]
-  input_ops["input"] = [xgraph.get_op_by_name(node.in_nodes[0])]
+
+  input_list = []
+  for input in node.in_tensors:
+    if node.has_bound_params() and input.is_param_tensor():
+      continue
+    elif input.is_param_tensor():
+      input_op = xgraph.get_op_by_name(input.name)
+    else:
+      input_op = xgraph.get_op_by_name(input.node.name)
+    input_list.append(input_op)
+    
+  input_ops["input"] = xgraph.create_input_fix_ops(input_list, node.name, quant_config)
   xgraph.create_fixed_normal_op(
       node.name, "reshape", quant_config, input_ops=input_ops)
 

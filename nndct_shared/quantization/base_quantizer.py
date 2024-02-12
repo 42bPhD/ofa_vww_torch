@@ -153,6 +153,9 @@ class BaseQuantizer():
    
   def set_fix_position(self, name, fp, tensor_type='output', idx=0):
     self.quant_config_imp.set_fix_position(name, fp, self.configer, tensor_type, idx)
+    
+  def get_bit_width(self, name, tensor_type='output', idx=0):
+    return self.quant_config_imp.get_bit_width(name, self.configer, tensor_type, idx)
   
   def insert_local_quant_config(self, name, config, tensor_type='output'):
     self.quant_config_imp.insert_local_quant_config(name, config, tensor_type)

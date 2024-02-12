@@ -19,12 +19,17 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.optim.lr_scheduler import CosineAnnealingLR
 # from torchvision.models.mobilenet import mobilenet_v2
+from utils.utils import (save_checkpoint, 
+                            load_weights, 
+                            adjust_learning_rate, 
+                            accuracy)
+from utils.utils import AverageMeter, ProgressMeter, Cross_entropy_loss_with_soft_target
+from utils.dataloaders import get_dataloader
 
 from vww_model import mobilenet_v1 as mobilenet_v2
-# from pytorch_nndct import OFAPruner
+from pytorch_nndct import OFAPruner
 
 parser = argparse.ArgumentParser(description='PyTorch OFA VWW Training')
-
 # ofa config
 parser.add_argument(
     '--channel_divisible', type=int, default=2, help='make channel divisible')
@@ -108,70 +113,8 @@ parser.add_argument(
 parser.add_argument(
     '--seed', default=20, type=int, help='seed for initializing training. ')
 
-
 args, _ = parser.parse_known_args()
 
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self, name, fmt=':f'):
-        self.name = name
-        self.fmt = fmt
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-    def __str__(self):
-        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
-        return fmtstr.format(**self.__dict__)
-
-class ProgressMeter(object):
-    def __init__(self, num_batches, meters, prefix=""):
-        self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
-        self.meters = meters
-        self.prefix = prefix
-
-    def display(self, batch):
-        entries = [self.prefix + self.batch_fmtstr.format(batch)]
-        entries += [str(meter) for meter in self.meters]
-        print('\t'.join(entries))
-
-    def _get_batch_fmtstr(self, num_batches):
-        num_digits = len(str(num_batches // 1))
-        fmt = '{:' + str(num_digits) + 'd}'
-        return '[' + fmt + '/' + fmt.format(num_batches) + ']'
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = []
-        for k in topk:
-            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(100.0 / batch_size))
-        return res
-def adjust_learning_rate(optimizer, epoch, lr):
-    """Sets the learning rate to the initial LR decayed by every 2 epochs"""
-    lr = lr * (0.1**(epoch // 2))
-
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
-        
 def train(train_loader,
           model,
           criterion,
@@ -243,9 +186,8 @@ def train(train_loader,
         if lr_scheduler:
             lr_scheduler.step()
 
-
         # measure accuracy and record loss
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
+        acc1, acc5 = accuracy(output, target, topk=(1, 2))
         losses.update(loss.item(), images.size(0))
         top1.update(acc1[0], images.size(0))
         top5.update(acc5[0], images.size(0))
@@ -260,8 +202,13 @@ def train(train_loader,
         if lr_scheduler and i % 1000==0:
             print('cur lr: ', lr_scheduler.get_lr()[0])
 
-def validate_subnet(train_loader, val_loader, model, ofa_pruner, criterion,
-                    args, bn_calibration):
+def validate_subnet(train_loader, 
+                    val_loader, 
+                    model, 
+                    ofa_pruner, 
+                    criterion,
+                    args:dict, 
+                    bn_calibration:bool):
 
     evaluated_subnet = {
         'ofa_min_subnet': {},
@@ -287,6 +234,7 @@ def validate_subnet(train_loader, val_loader, model, ofa_pruner, criterion,
         static_subnet = static_subnet.cuda()
 
         if bn_calibration:
+            print(f'{net_id} model runing bn calibration...')
             with torch.no_grad():
                 static_subnet.eval()
                 ofa_pruner.reset_bn_running_stats_for_calibration(static_subnet)
@@ -297,7 +245,7 @@ def validate_subnet(train_loader, val_loader, model, ofa_pruner, criterion,
                 images = images.cuda()
                 static_subnet(images)  #forward only
 
-    acc1, acc5 = validate(val_loader, static_subnet, criterion, args)
+    acc1, acc5 = validate_subnet(val_loader, static_subnet, criterion, args)
 
     summary = {
         'net_id': net_id,
@@ -310,62 +258,22 @@ def validate_subnet(train_loader, val_loader, model, ofa_pruner, criterion,
 
     print(summary)
 
-def validate(val_loader, model, criterion, args):
+def evaluate(val_loader, model, criterion, ofa_pruner=None, train_loader=None):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
     top5 = AverageMeter('Acc@5', ':6.2f')
-    progress = ProgressMeter(
-        len(val_loader), [batch_time, losses, top1, top5], prefix='Test: ')
-
-    # switch to evaluate mode
-    model.eval()
-
-    with torch.no_grad():
-        end = time.time()
-        for i, (images, target) in enumerate(val_loader):
-            if torch.cuda.is_available():
-                images = images.cuda(args.gpu)
-                target = target.cuda(args.gpu)
-
-            # compute output
-            output = model(images)
-            loss = criterion(output, target)
-
-            # measure accuracy and record loss
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
-            losses.update(loss.item(), images.size(0))
-            top1.update(acc1[0], images.size(0))
-            top5.update(acc5[0], images.size(0))
-
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
-
-            if i % args.print_freq == 0:
-                progress.display(i)
-
-        # TODO: this should also be done with the ProgressMeter
-        print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'.format(
-            top1=top1, top5=top5))
-
-    return float(top1.avg), float(top5.avg)
-
-def evaluate(dataloader, model, criterion, ofa_pruner=None, train_loader=None):
-    batch_time = AverageMeter('Time', ':6.3f')
-    losses = AverageMeter('Loss', ':.4e')
-    top1 = AverageMeter('Acc@1', ':6.2f')
-    top5 = AverageMeter('Acc@5', ':6.2f')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     progress = ProgressMeter(
         len(val_loader), [batch_time, losses, top1, top5], prefix='Test: ')
 
     if ofa_pruner:
         dynamic_subnet, dynamic_subnet_setting = ofa_pruner.sample_subnet(
-            model, 'max')
+            model.cpu(), 'max')
         static_subnet, _, macs, params = ofa_pruner.get_static_subnet(
             dynamic_subnet, dynamic_subnet_setting)
 
-        model = static_subnet.cuda()
+        model = static_subnet.to(device)
 
         with torch.no_grad():
             model.eval()
@@ -374,7 +282,7 @@ def evaluate(dataloader, model, criterion, ofa_pruner=None, train_loader=None):
             print('runing bn calibration...')
 
             for batch_idx, (images, _) in enumerate(train_loader):
-                images = images.cuda(non_blocking=True)
+                images = images.to(device)
                 model(images)
                 if batch_idx >= 16:
                     break
@@ -384,17 +292,17 @@ def evaluate(dataloader, model, criterion, ofa_pruner=None, train_loader=None):
 
     with torch.no_grad():
         end = time.time()
-        for i, (images, target) in enumerate(dataloader):
-            model = model.cuda()
-            images = images.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
+        for i, (images, target) in enumerate(val_loader):
+            model = model.to(device)
+            images = images.to(device)
+            target = target.to(device)
 
             # compute output
             output = model(images)
             loss = criterion(output, target)
 
             # measure accuracy and record loss
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            acc1, acc5 = accuracy(output, target, topk=(1, 2))
             losses.update(loss.item(), images.size(0))
             top1.update(acc1[0], images.size(0))
             top5.update(acc5[0], images.size(0))
@@ -412,24 +320,10 @@ def evaluate(dataloader, model, criterion, ofa_pruner=None, train_loader=None):
 
     return top1.avg, top5.avg
 
-class cross_entropy_loss_with_soft_target(torch.nn.modules.loss._Loss):
-  def forward(self, output, target):
-    target = torch.nn.functional.softmax(target, dim=1)
-    logsoftmax = nn.LogSoftmax()
-    return torch.mean(torch.sum(-target * logsoftmax(output), 1))
 
 
-def save_checkpoint(state, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
-    shutil.copyfile(filename, 'model_best.pth.tar')
-
-def load_weights(model, model_path):
-    checkpoint = torch.load(model_path)
-    model.load_state_dict(checkpoint)
-    return model
-
-from utils.dataloaders import get_dataloader
 if __name__ == '__main__':
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = mobilenet_v2()
     model.cuda()
     train_loader, val_loader = get_dataloader(dataset_dir=args.data_dir, 
@@ -441,35 +335,69 @@ if __name__ == '__main__':
     criterion = torch.nn.CrossEntropyLoss().cuda()
     
     if os.path.exists(args.pretrained):
-        ckpt = torch.load(args.pretrained)
-        model.load_state_dict(ckpt)
-        acc1, acc5 = validate(val_loader, model, criterion, args)
+        model = load_weights(model, args.pretrained)
+        acc1, acc5 = evaluate(val_loader=val_loader, 
+                              model=model, 
+                              criterion=criterion, 
+                              ofa_pruner=None, train_loader=None)
     else:
         optimizer = torch.optim.Adam(
             model.parameters(), args.lr, weight_decay=args.weight_decay)
-
-    best_acc1 = 0
-    
-    for epoch in range(args.epoches):
-        adjust_learning_rate(optimizer, epoch, args.lr)
-        train(train_loader, model, criterion, optimizer, epoch)
-        acc1, acc5 = validate(val_loader, model, criterion)
-        if acc1 > best_acc1:
-            best_acc1 = acc1
-            with torch.no_grad():
-                torch.save(model.cpu().state_dict(), args.pretrained)
-                model = model.cuda()
+        best_acc1 = 0
+        for epoch in range(args.epochs):
+            adjust_learning_rate(optimizer, epoch, args.lr)
+            train(train_loader, model, criterion, optimizer, epoch)  
+            acc1, acc5 =  evaluate(val_loader=val_loader, 
+                                model=model, 
+                                criterion=criterion, 
+                                ofa_pruner=None, train_loader=None)
+            if acc1 > best_acc1:
+                best_acc1 = acc1
+                with torch.no_grad():
+                    torch.save(model.cpu().state_dict(), args.pretrained)
+                    model = model.cuda()
+                    
+    lr_scheduler = CosineAnnealingLR(
+      optimizer=optimizer,
+      T_max=args.epochs * train_loader // args.batch_size)
     
     
     teacher_model = model
-    inputs = torch.randn([1, 3, 96, 96], dtype=torch.float32).cuda()
+    inputs = torch.randn([1, 3, 96, 96], dtype=torch.float32)
 
     
-    # ofa_pruner = OFAPruner(teacher_model, inputs)
-    # ofa_model = ofa_pruner.ofa_model(args.expand_ratio, args.channel_divisible,
-    #                                 args.excludes)
+    ofa_pruner = OFAPruner(teacher_model, inputs)
+    ofa_model = ofa_pruner.ofa_model(args.expand_ratio, args.channel_divisible,
+                                    args.excludes)
+    model = ofa_model.cuda()
     
     optimizer = torch.optim.Adam(
         model.parameters(), args.lr, weight_decay=args.weight_decay)
 
-    soft_criterion = cross_entropy_loss_with_soft_target().cuda(args.gpu)
+    soft_criterion = Cross_entropy_loss_with_soft_target().cuda(device)
+        
+    best_acc1 = 0
+    for epoch in range(args.epochs):
+        adjust_learning_rate(optimizer, epoch, args.lr)
+        train(train_loader, model, criterion, optimizer, epoch, teacher_model,
+            ofa_pruner, soft_criterion)
+        acc1, acc5 =  evaluate(val_loader=val_loader, 
+                              model=model, 
+                              criterion=criterion, 
+                              ofa_pruner=ofa_pruner, train_loader=train_loader)
+
+        # remember best acc@1 and save checkpoint
+        is_best = acc1 > best_acc1
+        best_acc1 = max(acc1, best_acc1)
+
+        if is_best:
+            pretrained_path = ''.join(os.path.splitext(args.pretrained)[0] + '_best' + os.path.splitext(args.pretrained)[1])
+            save_checkpoint(state = {
+                'epoch': epoch + 1,
+                'state_dict': model.cpu().state_dict(),
+                'best_acc1': best_acc1,
+                'optimizer': optimizer.state_dict(),
+                # 'scheduler': lr_scheduler.state_dict(),
+                }, 
+                filename=pretrained_path)
+            model = model.cuda()

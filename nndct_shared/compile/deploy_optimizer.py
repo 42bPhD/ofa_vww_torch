@@ -960,6 +960,8 @@ class DevGraphOptimizer(object):
         output_shape = node.out_tensors[0].shape
         new_reshape_op = base_op.Reshape(NNDCT_OP.RESHAPE)
         new_reshape_op.set_attr(new_reshape_op.AttrName.SHAPE, output_shape)
+        for param_type, param_tensor in node.op.params.items():
+          new_reshape_op.set_param(param_type, param_tensor)
         node.op = new_reshape_op
   
   def convert_shape_tensor_to_const(self):
@@ -1023,6 +1025,12 @@ class DevGraphOptimizer(object):
         continue
       if node.op.type in [NNDCT_OP.ADD, NNDCT_OP.SUB, NNDCT_OP.RSUB, NNDCT_OP.MULTIPLY, NNDCT_OP.DIV]:
         input, other = node.node_attr(node.op.AttrName.INPUT), node.node_attr(node.op.AttrName.OTHER)
+        
+        if not hasattr(input.data, 'shape'):
+          input.data = np.array(input.data)
+        if not hasattr(other.data, 'shape'):
+          other.data = np.array(other.data)
+
         if input.data.shape == other.data.shape:
           continue
        

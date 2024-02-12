@@ -11,6 +11,7 @@ import os
 import argparse
 
 import torch
+from torch import nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR, _LRScheduler, LambdaLR
 from torch.utils.tensorboard import SummaryWriter
@@ -130,7 +131,6 @@ def eval_training(
     # loss = test_loss
     # accuracy = test_acc
     
-
     # add information to tensorboard
     if log_to_tensorboard and writer:
         writer.add_scalar("Test/Average loss", test_loss, epoch)
@@ -139,7 +139,7 @@ def eval_training(
     return test_acc, test_loss
 
 
-def train_epochs(model, 
+def train_epochs(model:nn.Module, 
                  train_loader, 
                  val_loader,
                  epoch_count,

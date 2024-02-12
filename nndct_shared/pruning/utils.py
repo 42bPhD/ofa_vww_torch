@@ -24,7 +24,7 @@ from nndct_shared.utils.tensor_util import DataFormatMap
 from typing import List
 
 def num_remaining_channels(num_channels, ratio, channel_divisible):
-  if num_channels <= channel_divisible:
+  if (num_channels <= channel_divisible) or (num_channels == 3):
     return num_channels
 
   value = int((1 - ratio) * num_channels)

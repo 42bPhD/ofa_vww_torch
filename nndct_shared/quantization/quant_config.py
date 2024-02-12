@@ -23,6 +23,8 @@ import json
 from typing import Dict, List, Optional
 from abc import ABCMeta, abstractmethod
 
+from nndct_shared.utils import NndctOption
+import nndct_shared.utils as nndct_utils
 from nndct_shared.utils import option_util, NndctScreenLogger, QError, QWarning
 
 class QConfigBase(metaclass=ABCMeta):
@@ -137,6 +139,7 @@ class QConfigBase(metaclass=ABCMeta):
     def __init__(self):
         self._qconfig = copy.deepcopy(self._default_qconfig)
         self._only_int_datatype = True
+        self._config_to_dump = {}
 
     @abstractmethod
     def parse_bit_width(self, name, key, config_value, config_use):
@@ -614,3 +617,75 @@ class QConfigBase(metaclass=ABCMeta):
     @property
     def only_int_quantize(self):
         return self._only_int_datatype
+    
+    
+    def dump_quant_config(self, file_name):
+        def make_config_to_dump(dump_config, use_config):
+            config_temp = {}
+            for tensor_type in dump_config["quantizable_data_type"]:
+                config_temp[tensor_type] = {}
+                if len(use_config[tensor_type]) > 0:
+                    config_temp[tensor_type]["datatype"] = use_config[tensor_type]["datatype"]
+                    if config_temp[tensor_type]["datatype"] == "int":
+                        config_temp[tensor_type]["bit_width"] = use_config[tensor_type]["bit_width"]
+                        config_temp[tensor_type]["method"] = use_config[tensor_type]["method"]
+                        config_temp[tensor_type]["round_mode"] = use_config[tensor_type]["round_method"]
+                        config_temp[tensor_type]["symmetry"] = True if use_config[tensor_type]["symmetric_mode"] == "symmetric" else False
+                        config_temp[tensor_type]["per_channel"] = True if use_config[tensor_type]["granularity"] == "per_channel" else False
+                        config_temp[tensor_type]["signed"] = use_config[tensor_type]["signed"]
+                        config_temp[tensor_type]["narrow_range"] = use_config[tensor_type]["narrow_range"]
+                        config_temp[tensor_type]["scale_type"] = use_config[tensor_type]["scale_type"]
+                        if tensor_type in ["input", "activation"]:
+                            config_temp[tensor_type]["calib_statistic_method"] = use_config[tensor_type]["calib_statistic_method"]
+            
+            dump_config["overall_quantize_config"] = copy.deepcopy(config_temp["activation"]) if len(config_temp["activation"]) > 0 else copy.deepcopy(config_temp["input"])
+            
+            dump_config["tensor_quantize_config"] = {}
+            for tensor_type in dump_config["quantizable_data_type"]:
+                dump_config["tensor_quantize_config"][tensor_type] = {}
+                if len(use_config[tensor_type]) > 0:
+                    for key, item in config_temp[tensor_type].items():
+                        if key not in dump_config["overall_quantize_config"].keys() or item != dump_config["overall_quantize_config"][key]:
+                            dump_config["tensor_quantize_config"][tensor_type][key] = item
+                if len(dump_config["tensor_quantize_config"][tensor_type]) == 0:
+                    del dump_config["tensor_quantize_config"][tensor_type]
+            if len(dump_config["tensor_quantize_config"]) == 0:
+                del dump_config["tensor_quantize_config"]
+        
+        self._config_to_dump["convert_relu6_to_relu"] = NndctOption.nndct_convert_relu6_to_relu.value
+        self._config_to_dump["convert_silu_to_hswish"] = NndctOption.nndct_convert_silu_to_hswish.value
+        self._config_to_dump["include_cle"] = NndctOption.nndct_equalization.value
+        self._config_to_dump["change_concat_input_fix"] = NndctOption.nndct_change_concat_input_fix.value
+        self._config_to_dump["change_pool_input_fix"] = NndctOption.nndct_change_pool_input_fix.value
+        self._config_to_dump["keep_first_last_layer_accuracy"] = False
+        self._config_to_dump["keep_add_layer_accuracy"] = False
+        self._config_to_dump["include_bias_corr"] = NndctOption.nndct_param_corr.value
+        self._config_to_dump["onnx_opset_version"] = NndctOption.nndct_onnx_opset_version.value
+        self._config_to_dump["target_device"] = self._qconfig["target_device"]
+        self._config_to_dump["quantizable_data_type"] = self._qconfig["quantizable_data_type"]
+        
+        make_config_to_dump(self._config_to_dump, self._qconfig)
+
+        self._config_to_dump["layer_quantize_config"] = []
+        for key, item in self._qconfig["layer_type_config"].items():
+            config_temp = {}
+            config_temp["layer_type"] = key
+            config_temp["layer_name"] = None
+            config_temp["quantizable_data_type"] = item["quantizable_data_type"]
+            make_config_to_dump(config_temp, item)
+            self._config_to_dump["layer_quantize_config"].append(config_temp)
+        
+        for key, item in self._qconfig["layer_name_config"].items():
+            config_temp = {}
+            config_temp["layer_type"] = None
+            config_temp["layer_name"] = key
+            config_temp["quantizable_data_type"] = item["quantizable_data_type"]
+            make_config_to_dump(config_temp, item)
+            self._config_to_dump["layer_quantize_config"].append(config_temp)
+
+        if len(self._config_to_dump["layer_quantize_config"]) == 0:
+            del self._config_to_dump["layer_quantize_config"]
+        
+        with open(file_name, "w") as f:
+            json.dump(self._config_to_dump, f, indent=2, ensure_ascii=False)
+

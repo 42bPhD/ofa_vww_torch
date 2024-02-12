@@ -187,3 +187,6 @@ class NndctOption(object):
 
   nndct_fx_mode = Option(name="fx_mode", dtype=bool, default=False, action="store_true", env="NNDCT_FX_MODE", help="turn on fx mode")
 
+  nndct_dump_quant_config = Option(name="dump_quant_config", dtype=bool, default=False, action="store_true", env="NNDCT_DUMP_QUANT_CONFIG", help="dump quant config used")
+
+  nndct_close_rich_input_output = Option(name="nndct_close_rich_input_output", dtype=bool, default=False, action="store_true", env="NNDCT_CLOSE_RICH_INPUT_OUTPUT", help="turn off rich I/O for compatibility with legacy code")

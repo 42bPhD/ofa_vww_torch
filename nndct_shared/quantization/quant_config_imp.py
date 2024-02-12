@@ -52,10 +52,13 @@ class QuantConfigImpBase(ABC):
   def insert_local_quant_config(self, name, config, tensor_type='output'):
     pass
   
-  def get_fix_position(self, name, tensor_type='output', idx=0):
+  def get_fix_position(self, name, configer, tensor_type='output', idx=0):
     pass
    
-  def set_fix_position(self, name, fp, tensor_type='output', idx=0):
+  def set_fix_position(self, name, fp, configer, tensor_type='output', idx=0):
+    pass
+  
+  def get_bit_width(self, name, configer, tensor_type='output', idx=0):
     pass
   
   @property
@@ -313,11 +316,8 @@ class DPUQConfigImp(QuantConfigImpBase):
     self._QuantInfo[tensor_type][name]=[config]
     
   def get_fix_position(self, name, configer, tensor_type='output', idx=0):
-    if (tensor_type == 'output' and 
-        name not in self._QuantInfo[tensor_type].keys()):
-      name = configer.quant_output(name).name
-    bnfp = copy.deepcopy(self._QuantInfo[tensor_type][name][idx])
-    return bnfp[1] if bnfp is not None else None
+    bnfp = self.get_quant_config(name, configer, real_value=False, tensor_type=tensor_type, idx=idx)
+    return bnfp[1] if (bnfp is not None and len(bnfp) == 2) else None
   
   def set_fix_position(self, name, fp, configer, tensor_type='output', idx=0):
     if (tensor_type == 'output' and 
@@ -325,6 +325,10 @@ class DPUQConfigImp(QuantConfigImpBase):
       name = configer.quant_output(name).name
     if self._QuantInfo[tensor_type][name][idx] is not None:
       self._QuantInfo[tensor_type][name][idx][1] = fp
+      
+  def get_bit_width(self, name, configer, tensor_type='output', idx=0):
+    bnfp = self.get_quant_config(name, configer, real_value=False, tensor_type=tensor_type, idx=idx)
+    return bnfp[0] if (bnfp is not None and len(bnfp) == 2) else None
   
 class CPUGPUQConfigImp(QuantConfigImpBase):
   
@@ -376,3 +380,7 @@ class CPUGPUQConfigImp(QuantConfigImpBase):
     if name in self._QuantInfo[tensor_type].keys() and self._QuantInfo[tensor_type][name][0][1] is not None:
       return
     self._QuantInfo[tensor_type][name] = [config]
+    
+  def get_bit_width(self, name, configer, tensor_type='output', idx=0):
+    bnfp = self.get_quant_config(name, configer, real_value=False, tensor_type=tensor_type, idx=idx)
+    return bnfp[0] if (bnfp is not None and len(bnfp) == 4) else None
