@@ -1,0 +1,13 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.0.1 
+torchvision==0.15.2 
+torchaudio==2.0.2 
+scipy<=1.9.3
+numpy<=1.21.6
+tqdm
+ninja
+six
+tabulate==0.8.9 
+graphviz==0.19.1
+PyYAML==6.0
+networkx==2.5.1
