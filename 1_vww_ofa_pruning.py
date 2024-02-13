@@ -157,7 +157,7 @@ def train(train_loader,
         if teacher_model:
             teacher_model.train()
             with torch.no_grad():
-                soft_logits = teacher_model(images).detach()
+                soft_logits = teacher_model(images)
 
         if ofa_pruner:
             for arch_id in range(4):
@@ -354,12 +354,19 @@ if __name__ == '__main__':
             if acc1 > best_acc1:
                 best_acc1 = acc1
                 with torch.no_grad():
-                    torch.save(model.cpu().state_dict(), args.pretrained)
+                    save_checkpoint(state = {
+                    'epoch': epoch + 1,
+                    'state_dict': model.cpu().state_dict(),
+                    'best_acc1': best_acc1,
+                    'optimizer': optimizer.state_dict(),
+                    # 'scheduler': lr_scheduler.state_dict(),
+                    }, 
+                    filename=args.pretrained)
                     model = model.cuda()
                     
     lr_scheduler = CosineAnnealingLR(
       optimizer=optimizer,
-      T_max=args.epochs * train_loader // args.batch_size)
+      T_max=int(args.epochs) * len(train_loader) // args.batch_size)
     
     
     teacher_model = model
@@ -379,8 +386,13 @@ if __name__ == '__main__':
     best_acc1 = 0
     for epoch in range(args.epochs):
         adjust_learning_rate(optimizer, epoch, args.lr)
-        train(train_loader, model, criterion, optimizer, epoch, teacher_model,
-            ofa_pruner, soft_criterion)
+        train(train_loader, 
+                model, 
+                criterion, 
+                optimizer, 
+                epoch, 
+                teacher_model,
+                ofa_pruner, soft_criterion)
         acc1, acc5 =  evaluate(val_loader=val_loader, 
                               model=model, 
                               criterion=criterion, 
