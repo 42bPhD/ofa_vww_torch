@@ -1,0 +1,980 @@
+{
+    "0": {
+        "net_id": "net_evo_7_mutate_7",
+        "mode": "evaluate",
+        "acc@top1": 63.007328033447266,
+        "macs": 4.904292,
+        "params": 0.137962,
+        "subnet_setting": [
+            [
+                {
+                    "dynamic_conv_module_name": "conv10_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv9_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv11_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 128,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv10_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 128,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv12_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv11_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv13_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv12_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv14_1.depthwise",
+                    "candidate_out_channel_list": [
+                        128,
+                        192,
+                        256
+                    ],
+                    "active_out_channel": 192,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv13_2.pointwise",
+                    "candidate_out_channel_list": [
+                        128,
+                        192,
+                        256
+                    ],
+                    "active_out_channel": 192,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv3_1.depthwise",
+                    "candidate_out_channel_list": [
+                        8,
+                        12,
+                        16
+                    ],
+                    "active_out_channel": 8,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv2_2.pointwise",
+                    "candidate_out_channel_list": [
+                        8,
+                        12,
+                        16
+                    ],
+                    "active_out_channel": 8,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv4_1.depthwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 16,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv3_2.pointwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 16,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv5_1.depthwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 16,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv4_2.pointwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 16,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv6_1.depthwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv5_2.pointwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv7_1.depthwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv6_2.pointwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv8_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv7_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv9_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 128,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv8_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 128,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ]
+        ]
+    },
+    "10": {
+        "net_id": "net_evo_5_crossover_2",
+        "mode": "evaluate",
+        "acc@top1": 62.989994049072266,
+        "macs": 5.117412,
+        "params": 0.13593,
+        "subnet_setting": [
+            [
+                {
+                    "dynamic_conv_module_name": "conv10_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv9_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv11_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv10_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv12_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv11_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv13_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv12_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv14_1.depthwise",
+                    "candidate_out_channel_list": [
+                        128,
+                        192,
+                        256
+                    ],
+                    "active_out_channel": 192,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv13_2.pointwise",
+                    "candidate_out_channel_list": [
+                        128,
+                        192,
+                        256
+                    ],
+                    "active_out_channel": 192,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv3_1.depthwise",
+                    "candidate_out_channel_list": [
+                        8,
+                        12,
+                        16
+                    ],
+                    "active_out_channel": 8,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv2_2.pointwise",
+                    "candidate_out_channel_list": [
+                        8,
+                        12,
+                        16
+                    ],
+                    "active_out_channel": 8,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv4_1.depthwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 16,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv3_2.pointwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 16,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv5_1.depthwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 32,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv4_2.pointwise",
+                    "candidate_out_channel_list": [
+                        16,
+                        24,
+                        32
+                    ],
+                    "active_out_channel": 32,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv6_1.depthwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv5_2.pointwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv7_1.depthwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv6_2.pointwise",
+                    "candidate_out_channel_list": [
+                        32,
+                        48,
+                        64
+                    ],
+                    "active_out_channel": 64,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv8_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv7_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 96,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ],
+            [
+                {
+                    "dynamic_conv_module_name": "conv9_1.depthwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 128,
+                    "candidate_kernel_size_list": [
+                        [
+                            3,
+                            3
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        3,
+                        3
+                    ]
+                },
+                {
+                    "dynamic_conv_module_name": "conv8_2.pointwise",
+                    "candidate_out_channel_list": [
+                        64,
+                        96,
+                        128
+                    ],
+                    "active_out_channel": 128,
+                    "candidate_kernel_size_list": [
+                        [
+                            1,
+                            1
+                        ]
+                    ],
+                    "active_kernel_size": [
+                        1,
+                        1
+                    ]
+                }
+            ]
+        ]
+    }
+}

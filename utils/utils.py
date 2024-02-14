@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch import optim
 import shutil
+import time
 class DescStr:
     def __init__(self):
         self._desc = ''
@@ -106,3 +107,75 @@ def load_weights(model:nn.Module, model_path):
     checkpoint = torch.load(model_path)
     model.load_state_dict(checkpoint['state_dict'])
     return model
+
+def get_gpus(device):
+    return [int(i) for i in device.split(',')]
+
+def eval_fn(model, dataloader_test):
+    top1 = AverageMeter('Acc@1', ':6.2f')
+    model.eval()
+    with torch.no_grad():
+        for i, (images, targets) in enumerate(dataloader_test):
+            images = images.cuda()
+            targets = targets.cuda()
+            outputs = model(images)
+            acc1, _ = accuracy(outputs, targets, topk=(1, 2))
+            top1.update(acc1[0], images.size(0))
+    return float(top1.avg)
+
+def calibration_fn(model, train_loader, number_forward=16):
+    model.eval()
+    for n, m in model.named_modules():
+        if isinstance(m, torch.nn.BatchNorm2d):
+            m.training = True
+            m.momentum = None
+            m.reset_running_stats()
+    print("Calibration BN start...")
+    with torch.no_grad():
+        for index, (images, _) in enumerate(train_loader):
+            images = images.cuda()
+            model(images)
+            if index > number_forward:
+                break
+    print("Calibration BN end...")
+    
+def evaluate(dataloader, model, criterion):
+  batch_time = AverageMeter('Time', ':6.3f')
+  losses = AverageMeter('Loss', ':.4e')
+  top1 = AverageMeter('Acc@1', ':6.2f')
+  top5 = AverageMeter('Acc@5', ':6.2f')
+  progress = ProgressMeter(
+      len(dataloader), [batch_time, losses, top1, top5], prefix='Test: ')
+
+  # switch to evaluate mode
+  model.eval()
+
+  with torch.no_grad():
+    end = time.time()
+    for i, (images, target) in enumerate(dataloader):
+      model = model.cuda()
+      images = images.cuda(non_blocking=True)
+      target = target.cuda(non_blocking=True)
+
+      # compute output
+      output = model(images)
+      loss = criterion(output, target)
+
+      # measure accuracy and record loss
+      acc1, acc5 = accuracy(output, target, topk=(1, 5))
+      losses.update(loss.item(), images.size(0))
+      top1.update(acc1[0], images.size(0))
+      top5.update(acc5[0], images.size(0))
+
+      # measure elapsed time
+      batch_time.update(time.time() - end)
+      end = time.time()
+
+      if i % 50 == 0:
+        progress.display(i)
+
+    # TODO: this should also be done with the ProgressMeter
+    print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'.format(
+        top1=top1, top5=top5))
+
+  return float(top1.avg), float(top5.avg)

@@ -3,12 +3,6 @@ import sys as _sys
 
 from nndct_shared.utils import NndctOption, option_util, NndctDebugLogger, NndctScreenLogger, QError, QWarning, QNote
 from .version import __version__
-try:
-  from xir import Graph
-except ModuleNotFoundError:
-  NndctScreenLogger().warning2user(QWarning.NO_XIR, f"Can't find xir package in your environment.")
-except Exception as e:
-  NndctScreenLogger().warning2user(QWarning.XIR_MISMATCH, f"Import module 'xir' error: '{str(e)}'")
 
 #Importing any module in pytorch_nndct before xir is forbidden!!!
 from .apis import *
