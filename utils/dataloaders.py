@@ -3,8 +3,8 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, random_split
-
+from torch.utils.data import DataLoader, random_split, WeightedRandomSampler
+import numpy as np
 #Get mean ans std of dataset
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
@@ -34,6 +34,74 @@ class CustomDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.dataset)
+    
+def get_class_distribution_loaders(dataloader_obj:DataLoader,
+                                   dataset_obj: ImageFolder):
+    dataset_obj.class_to_idx
+    idx2class = {v: k for k, v in dataset_obj.class_to_idx.items()}
+    count_dict = {k:0 for k,v in dataset_obj.class_to_idx.items()}
+    
+    for _,j in dataloader_obj:
+        y_idx = j.item()
+        y_lbl = idx2class[y_idx]
+        count_dict[str(y_lbl)] += 1
+            
+    return count_dict
+
+def get_class_distribution(dataset_obj):
+    idx2class = {v: k for k, v in dataset_obj.class_to_idx.items()}
+    count_dict = {k:0 for k,v in dataset_obj.class_to_idx.items()}
+    
+    for element in dataset_obj:
+        y_lbl = element[1]
+        y_lbl = idx2class[y_lbl]
+        count_dict[y_lbl] += 1
+            
+    return count_dict
+
+def get_subnet_dataloader(data_dir, 
+                          subset_len, 
+                          batch_size: int = 16, 
+                          num_workers: int = 2,
+                          shuffle: bool = True,
+                          image_size: int = 96):
+    
+    # Reference : https://towardsdatascience.com/pytorch-basics-sampling-samplers-2a0f29f0bf2a
+    
+    val_transform = transforms.Compose([
+        transforms.Resize((image_size, image_size)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    # 원본 데이터셋 로드 (변환 없이)
+    dataset = ImageFolder(data_dir)
+    # 클래스 개수에 따른 가중치 계산
+    target_list = torch.tensor(dataset.targets)
+    class_count = [i for i in get_class_distribution(dataset).values()]
+    # 가중치 계산
+    class_weights = 1./torch.tensor(class_count, dtype=torch.float) 
+    class_weights_all = class_weights[target_list]
+    weighted_sampler = WeightedRandomSampler(
+    weights=class_weights_all,
+    num_samples=len(class_weights_all),
+    replacement=True
+    )
+    dataset_size = len(dataset)
+    dataset_indices = list(range(dataset_size))
+    np.random.shuffle(dataset_indices)
+    subset_indices = dataset_indices[:subset_len]
+    
+    # 변환을 적용한 데이터셋 생성
+    val_dataset = CustomDataset(dataset, subset_indices, transform=val_transform)
+
+    data_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=True, 
+        sampler=weighted_sampler)
+    return data_loader
 
 def get_dataloader(
     dataset_dir: str = "vw_coco2014_96",

@@ -1,0 +1,63 @@
+[COMMON]
+WORKSPACE="./pruning"
+BASELINE_DIR="./baseline"
+DATA_DIR="./dataset/cifar10"
+SPARSITY=0.3
+BASELINE_PATH = "${BASELINE_DIR}/model.pth"
+FT_EPOCHS=5
+GPUS="0"
+
+[STEP1]
+lr = 1e-3
+epochs = 5
+file = "1_train_baseline.py"
+pretrained = "${COMMON.BASELINE_PATH}"
+data_dir = "${COMMON.DATA_DIR}"
+num_workers  = 8 
+batch_size = 128 
+weight_decay = 1e-4 
+momentum=0.9
+
+[STEP2]
+file = "2_analyse.py"
+gpus = "${COMMON.GPUS}"
+pretrained = "${COMMON.BASELINE_PATH}"
+data_dir = "${COMMON.DATA_DIR}"
+num_workers = 1
+batch_size = 50
+
+[STEP3]
+file = "3_retrain_sparse_model.py"
+METHOD = 'iterative'
+SAVEDIR="${COMMON.WORKSPACE}/${METHOD}"
+gpus = "${COMMON.GPUS}"
+lr = 1e-3
+sparsity = "${COMMON.SPARSITY}"
+pretrained = "${COMMON.BASELINE_PATH}"
+save_dir = "${SAVEDIR}"
+data_dir = "${COMMON.DATA_DIR}"
+num_workers = 8
+batch_size = 50
+weight_decay = 1e-4
+momentum = 0.9
+
+
+[STEP4]
+file = "4_prune.py"
+METHOD = 'iterative'
+SAVEDIR="${COMMON.WORKSPACE}/${METHOD}"
+
+[STEP5]
+file = "5_compare.py"
+gpus = "${COMMON.GPUS}"
+lr = 1e-3
+sparsity = "${COMMON.SPARSITY}"
+sparsity_ratios=[0.1, 0.2, "${SPARSITY}"]
+pretrained = "${COMMON.BASELINE_PATH}"
+save_dir = "${SAVEDIR}"
+data_dir = "${COMMON.DATA_DIR}"
+num_workers = 8
+batch_size = 50
+weight_decay = 1e-4
+momentum = 0.9
+epochs = 5

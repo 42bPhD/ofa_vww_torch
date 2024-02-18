@@ -29,7 +29,7 @@ def get_dataloader(data_dir, batch_size, num_workers=48, shuffle=True, train=Tru
 
 def get_subnet_dataloader(data_dir, batch_size, subnet_len, num_workers=48, shuffle=True, train=True, download=True):
   dataset = datasets.CIFAR10(root=data_dir, train=train, download=download, transform=transform)
-  subnet_dataset = torch.utils.data.Subset(dataset, list(range(subset_len)))
+  subnet_dataset = torch.utils.data.Subset(dataset, list(range(subnet_len)))
   data_loader = torch.utils.data.DataLoader(
       subnet_dataset,
       batch_size=batch_size,

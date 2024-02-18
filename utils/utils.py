@@ -98,7 +98,16 @@ def eval_fn(model, dataloader_test):
             acc1, _ = accuracy(outputs, targets, topk=(1, 2))
             top1.update(acc1[0], images.size(0))
     return float(top1.avg)
-
+# def calibration_fn(model, dataloader, number_forward=100):
+#   model.train()
+#   print("Adaptive BN atart...")
+#   with torch.no_grad():
+#     for index, (images, target) in enumerate(dataloader):
+#       images = images.cuda()
+#       model(images)
+#       if index > number_forward:
+#         break
+#   print("Adaptive BN end...")
 def calibration_fn(model, train_loader, number_forward=16):
     model.eval()
     for n, m in model.named_modules():
