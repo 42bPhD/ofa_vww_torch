@@ -28,10 +28,7 @@ def num_remaining_channels(num_channels, ratio, channel_divisible):
     return num_channels
 
   value = int((1 - ratio) * num_channels)
-  return max(
-      channel_divisible,
-      int(value + channel_divisible / 2) // channel_divisible *
-      channel_divisible)
+  return max(channel_divisible, int(value + channel_divisible / 2) // channel_divisible * channel_divisible)
 
 def out_in_axis(dim):
   layout = DataFormatMap.param_format('nndct', dim)

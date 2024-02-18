@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from utils.lr_scheduler import WarmUpLR
 
-from vww_model import mobilenet_v1
+from models.vww_model import mobilenet_v1
 from utils.dataloaders import get_dataloader
 import torchsummary
 from tqdm import tqdm, trange

@@ -4,6 +4,11 @@ from torch import nn
 from torch import optim
 import shutil
 import time
+from utils.common import AverageMeter, ProgressMeter
+import numpy as np
+
+
+
 class DescStr:
     def __init__(self):
         self._desc = ''
@@ -19,50 +24,12 @@ class DescStr:
     def flush(self):
         pass
 
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self, name, fmt=':f'):
-        self.name = name
-        self.fmt = fmt
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-    def __str__(self):
-        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
-        return fmtstr.format(**self.__dict__)
-
 class Cross_entropy_loss_with_soft_target(torch.nn.modules.loss._Loss):
   def forward(self, output, target):
     target = torch.nn.functional.softmax(target, dim=1)
     logsoftmax = nn.functional.log_softmax
     return torch.mean(torch.sum(-target * logsoftmax(output, dim=1)))
 
-class ProgressMeter(object):
-    def __init__(self, num_batches, meters, prefix=""):
-        self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
-        self.meters = meters
-        self.prefix = prefix
-
-    def display(self, batch):
-        entries = [self.prefix + self.batch_fmtstr.format(batch)]
-        entries += [str(meter) for meter in self.meters]
-        print('\t'.join(entries))
-
-    def _get_batch_fmtstr(self, num_batches):
-        num_digits = len(str(num_batches // 1))
-        fmt = '{:' + str(num_digits) + 'd}'
-        return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""
@@ -111,6 +78,15 @@ def load_weights(model:nn.Module, model_path):
 def get_gpus(device):
     return [int(i) for i in device.split(',')]
 
+def reproducibility(SEED):
+    torch.manual_seed(SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(SEED)
+    np.set_printoptions(suppress=True)
+    np.set_printoptions(threshold=np.inf) #extend numpy
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(SEED)
 def eval_fn(model, dataloader_test):
     top1 = AverageMeter('Acc@1', ':6.2f')
     model.eval()
@@ -140,42 +116,62 @@ def calibration_fn(model, train_loader, number_forward=16):
     print("Calibration BN end...")
     
 def evaluate(dataloader, model, criterion):
-  batch_time = AverageMeter('Time', ':6.3f')
-  losses = AverageMeter('Loss', ':.4e')
-  top1 = AverageMeter('Acc@1', ':6.2f')
-  top5 = AverageMeter('Acc@5', ':6.2f')
-  progress = ProgressMeter(
-      len(dataloader), [batch_time, losses, top1, top5], prefix='Test: ')
+    batch_time = AverageMeter('Time', ':6.3f')
+    losses = AverageMeter('Loss', ':.4e')
+    top1 = AverageMeter('Acc@1', ':6.2f')
+    top5 = AverageMeter('Acc@5', ':6.2f')
+    progress = ProgressMeter(
+        len(dataloader), [batch_time, losses, top1, top5], prefix='Test: ')
 
-  # switch to evaluate mode
-  model.eval()
+    # switch to evaluate mode
+    model.eval()
 
-  with torch.no_grad():
-    end = time.time()
-    for i, (images, target) in enumerate(dataloader):
-      model = model.cuda()
-      images = images.cuda(non_blocking=True)
-      target = target.cuda(non_blocking=True)
+    with torch.no_grad():
+        end = time.time()
+        for i, (images, target) in enumerate(dataloader):
+            model = model.cuda()
+            images = images.cuda(non_blocking=True)
+            target = target.cuda(non_blocking=True)
 
-      # compute output
-      output = model(images)
-      loss = criterion(output, target)
+            # compute output
+            output = model(images)
+            loss = criterion(output, target)
 
-      # measure accuracy and record loss
-      acc1, acc5 = accuracy(output, target, topk=(1, 5))
-      losses.update(loss.item(), images.size(0))
-      top1.update(acc1[0], images.size(0))
-      top5.update(acc5[0], images.size(0))
+            # measure accuracy and record loss
+            acc1, acc5 = accuracy(output, target, topk=(1, 2))
+            losses.update(loss.item(), images.size(0))
+            top1.update(acc1[0], images.size(0))
+            top5.update(acc5[0], images.size(0))
 
-      # measure elapsed time
-      batch_time.update(time.time() - end)
-      end = time.time()
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
 
-      if i % 50 == 0:
-        progress.display(i)
+            if i % 50 == 0:
+                progress.display(i)
 
-    # TODO: this should also be done with the ProgressMeter
-    print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'.format(
-        top1=top1, top5=top5))
+            # TODO: this should also be done with the ProgressMeter
+            print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'.format(
+                top1=top1, top5=top5))
 
-  return float(top1.avg), float(top5.avg)
+    return float(top1.avg), float(top5.avg)
+
+
+def sgd_optimizer(model, lr, momentum, weight_decay):
+    params = []
+    for key, value in model.named_parameters():
+        if not value.requires_grad:
+            continue
+        apply_weight_decay = weight_decay
+        apply_lr = lr
+        if 'bias' in key or 'bn' in key:
+            apply_weight_decay = 0
+        if 'bias' in key:
+            apply_lr = 2 * lr
+        params += [{
+            'params': [value],
+            'lr': apply_lr,
+            'weight_decay': apply_weight_decay
+        }]
+    optimizer = torch.optim.SGD(params, lr, momentum=momentum)
+    return optimizer
