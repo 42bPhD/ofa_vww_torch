@@ -49,15 +49,22 @@ args, _ = parser.parse_known_args()
 
 if __name__ == '__main__':
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    batch_size = args.batch_size
+
     assert os.path.exists(args.pretrained), "No pretrained model!"
     if not os.path.exists(args.data_dir):
         assert False, "No dataset found!"
 
     if args.subset_len:
-        data_loader = get_subnet_dataloader(args.data_dir, batch_size, args.subnet_len, num_workers=args.num_workers, shuffle=False)
+        data_loader = get_subnet_dataloader(args.data_dir, 
+                                            args.batch_size, 
+                                            args.subnet_len, 
+                                            num_workers=args.num_workers,
+                                            shuffle=False)
     else:
-        data_loader = get_dataloader(args.data_dir, args.batch_size, num_workers=args.num_workers, shuffle=False)
+        _, data_loader = get_dataloader(args.data_dir, 
+                                        args.batch_size, 
+                                        num_workers=args.num_workers, 
+                                        shuffle=False)
 
     model = mobilenet_v1()
     model = load_weights(model, args.pretrained)
@@ -65,6 +72,10 @@ if __name__ == '__main__':
                                   dtype=torch.float32)
     input_signature = input_signature.to(device)
     model = model.to(device)
-    pruning_runner = get_pruning_runner(model, input_signature, 'iterative')
-    pruning_runner.ana(eval_fn, args=(data_loader,), gpus=get_gpus(0))
+    pruning_runner = get_pruning_runner(model, 
+                                        input_signature, 
+                                        'iterative')
+    pruning_runner.ana(eval_fn, 
+                       args=(data_loader,), 
+                       gpus=get_gpus("0"))
     print('Analysis done!')

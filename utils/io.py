@@ -12,7 +12,7 @@ import re
 class StepMonitor(object):
     def __init__(
         self,
-        model_name:str,
+        model_name:str='',
     ):
         """Custom checkpointer class that stores checkpoints in an easier to access way.
 
@@ -22,8 +22,10 @@ class StepMonitor(object):
 
         # 'model_name'+random_string
         self.model_name = model_name
-        
-        self.version = f"{self.model_name}_{self.random_string()}"
+        if self.model_name == '':
+            self.version = f"{self.random_string()}"
+        else:
+            self.version = f"{self.model_name}_{self.random_string()}"
         #Check Empty Directory
         os.makedirs(self.version, exist_ok=True)
         

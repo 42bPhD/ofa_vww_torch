@@ -12,50 +12,44 @@ from utils.dataloaders import get_dataloader
 from models.vww_model import mobilenet_v1
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
+
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    '--gpus', 
-    type=str, 
-    default='0', 
-    help='String of available GPU number')
-parser.add_argument(
-    '--lr', 
-    type=float, 
-    default=1e-3, 
-    help='Initial learning rate')
+parser.add_argument('--gpus', 
+                    type=str, 
+                    default='0',
+                    help='String of available GPU number')
+parser.add_argument('--lr', 
+                    type=float, 
+                    default=1e-3, 
+                    help='Initial learning rate')
 parser.add_argument('--epochs', 
                     type=int, 
                     default=50, 
                     help='Train epoch')
-parser.add_argument(
-    '--pretrained',
-    type=str,
-    default='vww_baseline.pth',
-    help='Pretrained model filepath')
-parser.add_argument(
-    '--data_dir',
-    type=str,
-    default='E:/1_TinyML/tiny/benchmark/training/visual_wake_words/vw_coco2014_96',
-    help='Dataset directory')
-parser.add_argument(
-    '--save_dir',
-    type=str,
-    default='trained_models',
-    help='Dataset directory')
-parser.add_argument(
-    '--num_workers',
-    type=int,
-    default=8,
-    help='Number of workers used in dataloading')
+parser.add_argument('--pretrained',
+                    type=str,
+                    default='vww_baseline.pth',
+                    help='Pretrained model filepath')
+parser.add_argument('--data_dir',
+                    type=str,
+                    default='E:/1_TinyML/tiny/benchmark/training/visual_wake_words/vw_coco2014_96',
+                    help='Dataset directory')
+parser.add_argument('--save_dir',
+                    type=str,
+                    default='trained_models',
+                    help='Dataset directory')
+parser.add_argument('--num_workers',
+                    type=int,
+                    default=8,
+                    help='Number of workers used in dataloading')
 parser.add_argument('--batch_size', 
                     type=int, 
                     default=50, 
                     help='Batch size')
-parser.add_argument(
-    '--weight_decay', 
-    type=float, 
-    default=1e-4, 
-    help='Weight decay')
+parser.add_argument('--weight_decay', 
+                    type=float, 
+                    default=1e-4, 
+                    help='Weight decay')
 parser.add_argument('--momentum', 
                     type=float, 
                     default=0.9, 
