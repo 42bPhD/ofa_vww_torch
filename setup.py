@@ -109,9 +109,11 @@ def build_config_setup():
       except Exception:
         print("failed to do the cleaning, please clean up manully")
       else:
-        os.symlink(f"../{package}", package)
+        pass
+        # os.symlink(f"../{package}", package)
     else:
-      os.symlink(f"../{package}", package)
+      pass
+      # os.symlink(f"../{package}", package)
 
   if INSTALL:
     if not os.path.exists("pytorch_nndct/nn/kernel"):
@@ -150,46 +152,11 @@ def build_config_setup():
         os.path.join(cwd, "pytorch_nndct/nn/include")
     ]
     Extension = CppExtension
-
-    if CUDA_AVAILABLE:
-      extra_compile_args['nvcc'] = ['-O2','-arch=sm_35']
-      cuda_src_path = os.path.join(cwd, "../csrc/cuda")
-      for name in os.listdir(cuda_src_path):
-        if name.split(".")[-1] in ["cu", "cpp", "cc", "c"]:
-          source_files.append(os.path.join(cuda_src_path, name))
-
-      cpp_src_path = os.path.join(cwd, "pytorch_nndct/nn/src/cuda")
-      for name in os.listdir(cpp_src_path):
-        if name.split(".")[-1] in ["cpp", "cc", "c"]:
-          source_files.append(os.path.join(cpp_src_path, name))
-
-      include_dir.append(os.path.join(cwd, "../include/cuda"))
-
-      from torch.utils.cpp_extension import CUDAExtension
-      Extension = CUDAExtension
-    elif HIP_AVAILABLE:
-      extra_compile_args['hipcc'] = ['-O2','-arch=sm_35']
-      hip_src_path = os.path.join(cwd, "../csrc/cuda")
-      for name in os.listdir(hip_src_path):
-        if name.split(".")[-1] in ["cu", "cpp", "cc", "c"]:
-          source_files.append(os.path.join(hip_src_path, name))
-
-      cpp_src_path = os.path.join(cwd, "pytorch_nndct/nn/src/cuda")
-      for name in os.listdir(cpp_src_path):
-        if name.split(".")[-1] in ["cpp", "cc", "c"]:
-          source_files.append(os.path.join(cpp_src_path, name))
-
-      include_dir.append(os.path.join(cwd, "../include/cuda"))
-
-      # CUDAExtension class has checks for HIP backend
-
-      from torch.utils.cpp_extension import CUDAExtension
-      Extension = CUDAExtension
-    else:
-      cpp_src_path = os.path.join(cwd, "pytorch_nndct/nn/src/cpu")
-      for name in os.listdir(cpp_src_path):
-        if name.split(".")[-1] in ["cpp", "cc", "c"]:
-          source_files.append(os.path.join(cpp_src_path, name))
+    
+    cpp_src_path = os.path.join(cwd, "pytorch_nndct/nn/src/cpu")
+    for name in os.listdir(cpp_src_path):
+      if name.split(".")[-1] in ["cpp", "cc", "c"]:
+        source_files.append(os.path.join(cpp_src_path, name))
 
     kernel_ext = Extension(name='pytorch_nndct.nn._kernels',
                            language='c++',

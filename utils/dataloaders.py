@@ -59,15 +59,13 @@ def get_class_distribution(dataset_obj):
             
     return count_dict
 
-def get_subnet_dataloader(data_dir, 
-                          subset_len, 
+def get_subnet_dataloader(data_dir:str, 
+                          subset_len:int = 1000, 
                           batch_size: int = 16, 
+                          image_size: int = 96,
                           num_workers: int = 2,
-                          shuffle: bool = True,
-                          image_size: int = 96):
-    
+                          shuffle: bool = True):
     # Reference : https://towardsdatascience.com/pytorch-basics-sampling-samplers-2a0f29f0bf2a
-    
     val_transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
@@ -75,32 +73,34 @@ def get_subnet_dataloader(data_dir,
     ])
     # 원본 데이터셋 로드 (변환 없이)
     dataset = ImageFolder(data_dir)
+    
     # 클래스 개수에 따른 가중치 계산
     target_list = torch.tensor(dataset.targets)
     class_count = [i for i in get_class_distribution(dataset).values()]
+    
     # 가중치 계산
-    class_weights = 1./torch.tensor(class_count, dtype=torch.float) 
+    class_weights = 1./torch.tensor(class_count, 
+                                    dtype=torch.float) 
     class_weights_all = class_weights[target_list]
-    weighted_sampler = WeightedRandomSampler(
-    weights=class_weights_all,
-    num_samples=len(class_weights_all),
-    replacement=True
-    )
+    # weighted_sampler = WeightedRandomSampler(weights=class_weights_all,
+    #                                          num_samples=len(class_weights_all),
+    #                                          replacement=True)
     dataset_size = len(dataset)
     dataset_indices = list(range(dataset_size))
     np.random.shuffle(dataset_indices)
     subset_indices = dataset_indices[:subset_len]
     
     # 변환을 적용한 데이터셋 생성
-    val_dataset = CustomDataset(dataset, subset_indices, transform=val_transform)
+    val_dataset = CustomDataset(dataset, 
+                                subset_indices, 
+                                transform=val_transform)
 
     data_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
-        pin_memory=True, 
-        sampler=weighted_sampler)
+        pin_memory=True)
     return data_loader
 
 def get_dataloader(

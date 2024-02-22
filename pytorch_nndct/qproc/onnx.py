@@ -113,7 +113,7 @@ def export_onnx_runable_model(quantizer, example_inputs, input_tensors_name, ret
   from torch.onnx import register_custom_op_symbolic
   from torch.onnx.symbolic_helper import parse_args
   import sys
-  import torch._C._onnx as _C_onnx
+  import torch.onnx as _C_onnx
 
   if compare_torch_version(CmpFlag.LESS, "1.7.0"):
     NndctScreenLogger().error2user(QError.TORCH_VERSION, f'Only supprt exporting onnx model with pytorch 1.7 and later version.')

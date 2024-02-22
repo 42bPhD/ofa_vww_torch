@@ -218,9 +218,11 @@ command line option \"--nndct_param_corr\" to load it.')
       if tensor_type != 'param':
         self.config_history[tensor_type][name][idx].append(bnfp[1])
         if (NndctOption.nndct_stat.value > 1):
-          print(f'---- fp history: {stats.mode(np.array(self.config_history[tensor_type][name][idx]))}')
+          print(f'---- fp history: {stats.mode(np.array(self.config_history[tensor_type][name][idx]), axis=None, keepdims=True)}')
+        #   print(f'---- fp history: {stats.mode(np.array(self.config_history[tensor_type][name][idx]))}')
         data = np.array(self.config_history[tensor_type][name][idx])
-        bnfp[1] = stats.mode(data)[0][0]
+        bnfp[1] = stats.mode(data, axis=None, keepdims=True)[0][0]
+        # bnfp[1] = stats.mode(data)[0][0]
         bnfp[1] = bnfp[1].astype(np.int32).tolist()
       self.set_quant_config(name, bnfp, tensor_type, idx)
       if (NndctOption.nndct_stat.value > 1):

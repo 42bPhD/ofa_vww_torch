@@ -20,8 +20,16 @@
 # import os
 import sys
 import torch
-# from ..load_kernels import nndct_kernels
-# from ..load_kernels import *
+
+from pysrc.nndct_fix_kernels import *
+from pysrc.nndct_fix_kernels import _fix_neuron_v2_cpu
+from pysrc.nndct_math_cpu import *
+from pysrc.nndct_fixneuron_op import *
+from pysrc.nndct_diffs_op import *
+from pysrc.bfp_kernel import *
+from pysrc.fix_kernel import *
+
+
 import copy
 import numpy as np
 from nndct_shared.utils import NndctOption, NndctScreenLogger
@@ -67,7 +75,7 @@ def clone_view_tensor(tensor):
   if (isinstance(tensor, torch.Tensor) and
    hasattr(tensor, "storage")  and 
    hasattr(tensor, "numel") and 
-   tensor.storage().size() != tensor.numel()):
+   tensor.untyped_storage().size() != tensor.numel()):
     cloned_tensor = tensor.clone()
   return cloned_tensor
 
@@ -94,7 +102,7 @@ class FixNeuronWithBackward(torch.nn.Module):
 @pre_and_post_process_f16_tensor
 def NndctRound(Tinput, Toutput, method=2):
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
-  torch.ops.vai.Round(Tinput, Toutput, method, device_id)
+  Toutput = Round(Tinput, Toutput, method, device_id)
   return Toutput
 
 @pre_and_post_process_f16_tensor
@@ -104,11 +112,11 @@ def NndctFixNeuron(Tinput, Toutput, maxamp, method=2):
   valmax = valmax - 1
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
   if support_onnx_export():
-    Toutput = torch.ops.vai.fix_neuron(Tinput, valmin, valmax, 
-                                       valamp, 0, method, device_id, 1)
+    Toutput = fix_neuron(Tinput, valmin, valmax, 
+                        valamp, 0, method, device_id, 1)
   else:
-    nndct_kernels.FixNeuronV2(Tinput, Toutput, valmin, valmax, 
-                              valamp, 0, method, device_id)
+    Toutput = FixNeuronV2(Tinput, Toutput, valmin, valmax, 
+                          valamp, 0, method, device_id)
   return Toutput
   '''
   if Tinput.device == torch.device("cpu"):
@@ -153,9 +161,10 @@ def NndctDiffsFixPos(Tinput, Tbuffer, Tfixpos, bit_width=8, range=5, method=2):
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
   Tinput = clone_view_tensor(Tinput)
   if support_onnx_export():
-    torch.ops.vai.diffs_fix_pos(Tinput, Tbuffer, Tfixpos, bit_width, range, method, device_id)
+    Tbuffer = diffs_fix_pos(Tinput, Tbuffer, Tfixpos, bit_width, range, method, device_id)
   else:
-    nndct_kernels.DiffsFixPos(Tinput, Tbuffer, Tfixpos, bit_width, range, method, device_id)
+    Tbuffer = DiffsFixPos(Tinput, Tbuffer, Tfixpos, bit_width, range, method, device_id)
+  return Tbuffer
 
 @pre_and_post_process_f16_tensor
 def NndctDiffsFixPosChannel(Tinput, Tbuffer, Tfixpos, axis, bit_width=8, scope=5, method=2):
@@ -165,19 +174,21 @@ def NndctDiffsFixPosChannel(Tinput, Tbuffer, Tfixpos, axis, bit_width=8, scope=5
   # TODO(@kewang): The split is a tensor view operation. Is it neccessary to clone tensor before calib and test ? 
   if support_onnx_export():
     for i in range(len(input_split)):
-      torch.ops.vai.diffs_fix_pos(input_split[i], buffer_split[i], Tfixpos[i], bit_width, scope, method, device_id)
+      buffer_split[i] = diffs_fix_pos(input_split[i], buffer_split[i], Tfixpos[i], bit_width, scope, method, device_id)
   else:
     for i in range(len(input_split)):
-      nndct_kernels.DiffsFixPos(input_split[i], buffer_split[i], Tfixpos[i], bit_width, scope, method, device_id)
+      buffer_split[i] = DiffsFixPos(input_split[i], buffer_split[i], Tfixpos[i], bit_width, scope, method, device_id)
+  return buffer_split
 
 @pre_and_post_process_f16_tensor
 def NndctSigmoidTableLookup(Tinput, Ttable, Toutput, fragpos):
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
   Tinput = clone_view_tensor(Tinput)
   if support_onnx_export():
-    torch.ops.vai.SigmoidTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
+    Toutput = SigmoidTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
   else:
-    nndct_kernels.SigmoidTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
+    Toutput = SigmoidTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctSigmoidSimulation(Tinput, Toutput, fragpos):
@@ -187,18 +198,20 @@ def NndctSigmoidSimulation(Tinput, Toutput, fragpos):
     print("Sigmoid simulation does not support CPU")
   else:
     if support_onnx_export():
-      torch.ops.vai.SigmoidSimulation(Tinput, Toutput, fragpos, device_id)
+      Toutput = SigmoidSimulation(Tinput, Toutput, fragpos, device_id)
     else:
-      nndct_kernels.SigmoidSimulation(Tinput, Toutput, fragpos, device_id)
+      Toutput = SigmoidSimulation(Tinput, Toutput, fragpos, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctTanhTableLookup(Tinput, Ttable, Toutput, fragpos):
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
   Tinput = clone_view_tensor(Tinput)
   if support_onnx_export():
-    torch.ops.vai.TanhTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
+    Toutput = TanhTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
   else:
-    nndct_kernels.TanhTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
+    Toutput = TanhTableLookup(Tinput, Ttable, Toutput, fragpos, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctTanhSimulation(Tinput, Toutput, fragpos):
@@ -208,9 +221,10 @@ def NndctTanhSimulation(Tinput, Toutput, fragpos):
     print("Tanh simulation does not support CPU")
   else:
     if support_onnx_export():
-      torch.ops.vai.TanhSimulation(Tinput, Toutput, fragpos, device_id)
+      Toutput = TanhSimulation(Tinput, Toutput, fragpos, device_id)
     else:
-      nndct_kernels.TanhSimulation(Tinput, Toutput, fragpos, device_id)
+      Toutput = TanhSimulation(Tinput, Toutput, fragpos, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctSoftmaxExpApproximate(Tinput, Toutput):
@@ -220,9 +234,10 @@ def NndctSoftmaxExpApproximate(Tinput, Toutput):
     print("Softmax Exponent Approximate does not support CPU")
   else:
     if support_onnx_export():
-      torch.ops.vai.SoftmaxExpApproximate(Tinput, Toutput, device_id)
+      Toutput = SoftmaxExpApproximate(Tinput, Toutput, device_id)
     else:
-      nndct_kernels.SoftmaxExpApproximate(Tinput, Toutput, device_id)
+      Toutput = SoftmaxExpApproximate(Tinput, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctSoftmaxLOD(Tinput, Toutput):
@@ -232,9 +247,10 @@ def NndctSoftmaxLOD(Tinput, Toutput):
     print("Softmax LOD does not support CPU")
   else:
     if support_onnx_export():
-      torch.ops.vai.SoftmaxLOD(Tinput, Toutput, device_id)
+      Toutput = SoftmaxLOD(Tinput, Toutput, device_id)
     else:
-      nndct_kernels.SoftmaxLOD(Tinput, Toutput, device_id)
+      Toutput = SoftmaxLOD(Tinput, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctSoftmaxSimulationPart1(Tinput, Toutput):
@@ -244,9 +260,10 @@ def NndctSoftmaxSimulationPart1(Tinput, Toutput):
     print("Softmax Simulation Part 1 does not support CPU")
   else:
     if support_onnx_export():
-      torch.ops.vai.SoftmaxSimulationPart1(Tinput, Toutput, device_id)
+      Toutput = SoftmaxSimulationPart1(Tinput, Toutput, device_id)
     else:
-      nndct_kernels.SoftmaxSimulationPart1(Tinput, Toutput, device_id)
+      Toutput = SoftmaxSimulationPart1(Tinput, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctSoftmaxSimulationPart2(sum, Toutput):
@@ -256,31 +273,37 @@ def NndctSoftmaxSimulationPart2(sum, Toutput):
     print("Softmax Simulation Part 2 does not support CPU")
   else:
     if support_onnx_export():
-      torch.ops.vai.SoftmaxSimulationPart2(sum, Toutput, device_id)
+      Toutput = SoftmaxSimulationPart2(sum, Toutput, device_id)
     else:
-      nndct_kernels.SoftmaxSimulationPart2(sum, Toutput, device_id)
+      Toutput = SoftmaxSimulationPart2(sum, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def fake_quantize_per_tensor(input, scale_inv, zero_point, quant_min, quant_max, method, inplace):
   if method == -1:
     scale_inv = scale_inv.item() if isinstance(scale_inv, torch.Tensor) else scale_inv
-    return torch.fake_quantize_per_tensor_affine(input, 1.0 / scale_inv, zero_point, quant_min, quant_max)
+    if not inplace:
+      return torch.fake_quantize_per_tensor_affine(input, 1.0 / scale_inv, zero_point, quant_min, quant_max)
+    else:
+      out = torch.fake_quantize_per_tensor_affine(input, 1.0 / scale_inv, zero_point, quant_min, quant_max)
+      input.data.copy_(out.data)
+      return input
   else:
     input = clone_view_tensor(input)
     device_id = 1 if input.device == torch.device("cpu") else 0
    
     if support_onnx_export():
-      output = torch.ops.vai.fix_neuron(input, quant_min, quant_max, 
+      output = fix_neuron(input, quant_min, quant_max, 
                                         scale_inv, zero_point, method, 
                                         device_id, inplace)
       return output
     else:
       output = input.clone() if inplace == 0 else input
-      nndct_kernels.FixNeuronV2(input, output, quant_min, 
-                                quant_max, scale_inv, zero_point, 
-                                method, device_id)
+      output = FixNeuronV2(input, output, quant_min,
+                           quant_max, scale_inv, zero_point, 
+                           method, device_id)
       return output
-        
+
 @pre_and_post_process_f16_tensor
 def fake_quantize_per_channel(input, scale_inv, zero_point, axis, quant_min, quant_max, method, inplace):
   if method == -1:
@@ -294,16 +317,16 @@ def fake_quantize_per_channel(input, scale_inv, zero_point, axis, quant_min, qua
     if support_onnx_export():
       scale = torch.where(scale_inv<sys.float_info.min, torch.tensor(sys.float_info.max, dtype=scale_inv.dtype, device=scale_inv.device), 1.0/scale_inv).to(torch.float)
       # api: (tensor(float), int32, int32, tensor(float), tensor(int8), int32, int32, int32, bool)
-      output = torch.ops.vai.fix_neuron_per_channel(input, quant_min, quant_max, scale, zero_point.to(torch.int8), axis, method, device_id, inplace) 
+      output = fix_neuron_per_channel(input, quant_min, quant_max, scale, zero_point.to(torch.int8), axis, method, device_id, inplace)
       return output
     else:
       input_split = torch.split(input, 1, dim=axis)
       output_cat = []
       for i in range(len(input_split)):
         output_split = input_split[i].clone() if inplace == 0 else input_split[i]
-        nndct_kernels.FixNeuronV2(input_split[i], output_split, quant_min, 
-                                  quant_max, scale_inv[i], zero_point[i], 
-                                  method, device_id)
+        output_split = FixNeuronV2(input_split[i], output_split, quant_min,
+                    quant_max, scale_inv[i], zero_point[i], 
+                    method, device_id)
         output_cat.append(output_split)
       output = torch.cat(output_cat, axis)
       return output
@@ -429,13 +452,16 @@ def fake_quantize_per_tensor_tensorrt(inputs, amax, min_bound, max_bound):
 def NndctSigmoidTableLookupAIE2(Tinput, Toutput, fragpos):
   Tinput = clone_view_tensor(Tinput)
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
-  torch.ops.vai.SigmoidTableLookupAIE2(Tinput, Toutput, fragpos, device_id)
+  Toutput = SigmoidTableLookupAIE2(Tinput, Toutput, fragpos, device_id)
+  return Toutput
+  
 
 @pre_and_post_process_f16_tensor
 def NndctTanhTableLookupAIE2(Tinput, Toutput, fragpos):
   Tinput = clone_view_tensor(Tinput)
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
-  torch.ops.vai.TanhTableLookupAIE2(Tinput, Toutput, fragpos, device_id)
+  Toutput = TanhTableLookupAIE2(Tinput, Toutput, fragpos, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctExpApprAIE2(Tinput, Toutput, bit_width):
@@ -444,7 +470,8 @@ def NndctExpApprAIE2(Tinput, Toutput, bit_width):
   if device_id == 1:
     print("Exp Approximation does not support CPU")
   else:
-    torch.ops.vai.ExpApprAIE2(Tinput, Toutput, device_id, bit_width)
+    Toutput = ExpApprAIE2(Tinput, Toutput, device_id, bit_width)
+    return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctLogSoftmaxFastLn(Tinput, Toutput):
@@ -453,7 +480,8 @@ def NndctLogSoftmaxFastLn(Tinput, Toutput):
   if device_id == 1:
     print("LogSoftmax fast ln does not support CPU")
   else:
-    torch.ops.vai.LogSoftmaxFastLn(Tinput, Toutput, device_id)
+    Toutput = LogSoftmaxFastLn(Tinput, Toutput, device_id)
+    return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctLogSoftmaxSub(Tinput, Toutput, Tsum):
@@ -462,25 +490,29 @@ def NndctLogSoftmaxSub(Tinput, Toutput, Tsum):
   if device_id == 1:
     print("LogSoftmax subtraction does not support CPU")
   else:
-    torch.ops.vai.LogSoftmaxSub(Tinput, Toutput, Tsum, device_id)
+    Toutput = LogSoftmaxSub(Tinput, Toutput, Tsum, device_id)
+    return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctAIESqrt(Tinput, Toutput):
   Tinput = clone_view_tensor(Tinput)
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
-  torch.ops.vai.AIESqrt(Tinput, Toutput, device_id)
+  Toutput = AIESqrt(Tinput, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctAIEISqrt(Tinput, Toutput):
   Tinput = clone_view_tensor(Tinput)
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
-  torch.ops.vai.AIEISqrt(Tinput, Toutput, device_id)
+  Toutput = AIEISqrt(Tinput, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctISqrt(Tinput, Toutput):
   Tinput = clone_view_tensor(Tinput)
   device_id = 1 if Tinput.device == torch.device("cpu") else 0
-  torch.ops.vai.LayernormISqrt(Tinput, Toutput, device_id)
+  Toutput = LayernormISqrt(Tinput, Toutput, device_id)
+  return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctLayernormInvSqrt(Tinput, Toutput):
@@ -489,7 +521,8 @@ def NndctLayernormInvSqrt(Tinput, Toutput):
   if device_id == 1:
     print("Layernorm InvSqrt does not support CPU")
   else:
-    torch.ops.vai.LayernormInvSqrt(Tinput, Toutput, device_id)
+    Toutput = LayernormInvSqrt(Tinput, Toutput, device_id)
+    return Toutput
 
 @pre_and_post_process_f16_tensor
 def NndctInverseAIE2(Tinput, Toutput):
@@ -498,18 +531,19 @@ def NndctInverseAIE2(Tinput, Toutput):
   if device_id == 1:
     print("Inverse AIE2 does not support CPU")
   else:
-    torch.ops.vai.InverseAIE2(Tinput, Toutput, device_id)
+    Toutput = InverseAIE2(Tinput, Toutput, device_id)
+    return Toutput
     
 def diffs_fix_pos(input, bit_width, scope, method):
     # get max and min element in the tensor
     abs_max = 1 << (bit_width - 1)
-    fix_lb = -abs_max - 0.5;
-    fix_ub = abs_max - 0.5;
+    fix_lb = -abs_max - 0.5
+    fix_ub = abs_max - 0.5
     x_max = torch.max(input)
     x_min = torch.min(input)
 
     # calculate step and fix pos based on max and min value
-    step = torch.max(x_min / fix_lb, x_max / fix_ub);
+    step = torch.max(x_min / fix_lb, x_max / fix_ub)
     max_scale = torch.floor(torch.log2(1.0/step)) if step > sys.float_info.min else torch.tensor(18)
 
     # calculate step based on diffs 

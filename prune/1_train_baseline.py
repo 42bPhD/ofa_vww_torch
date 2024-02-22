@@ -30,6 +30,10 @@ parser.add_argument('--pretrained',
                     type=str,
                     default='vww_baseline.pth',
                     help='Pretrained model filepath')
+parser.add_argument("--image-size", 
+                    default=96, 
+                    type=int, 
+                    help="Input image size (square assumed).")
 parser.add_argument('--data_dir',
                     type=str,
                     default='E:/1_TinyML/tiny/benchmark/training/visual_wake_words/vw_coco2014_96',
@@ -65,11 +69,11 @@ if __name__ == '__main__':
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     
     model = mobilenet_v1().to(device)
-    
-    batch_size = args.batch_size
+
 
     train_loader, val_loader = get_dataloader(args.data_dir, 
-                                              batch_size, 
+                                              args.batch_size,
+                                              args.image_size,
                                               num_workers=args.num_workers, 
                                               shuffle=True)
     
