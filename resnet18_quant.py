@@ -62,7 +62,7 @@ parser.add_argument('--inspect',
                     help='inspect model')
 parser.add_argument('--num_workers',
                     type=int,
-                    default=8,
+                    default=4,
                     help='Number of workers used in dataloading')
 parser.add_argument("--image-size", 
                     default=96, 

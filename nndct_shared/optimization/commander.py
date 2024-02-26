@@ -545,7 +545,7 @@ class OptimizeCommander(object):
     sqrt_of_ranges = np.sqrt(range_0 * range_1)
     scale = np.ones_like(range_0)
     
-    scale = np.where(sqrt_of_ranges != 0, range_0 / sqrt_of_ranges, scale)
+    scale = np.where(sqrt_of_ranges != 0, range_0 / (sqrt_of_ranges+np.finfo(float).eps), scale)
     
     i_max = np.max(np.fabs(conv_0_weight_bias), axis=1)
     o_max = np.max(np.fabs(conv_1_weight), axis=merge_dim)
